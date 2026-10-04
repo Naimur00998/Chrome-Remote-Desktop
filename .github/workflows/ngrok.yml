@@ -8,11 +8,11 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Download
-      run: Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+      run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
     - name: Extract
       run: Expand-Archive ngrok.zip
     - name: Auth
-      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+      run: .\ngrok\ngrok.exe config add-authtoken $Env:NGROK_AUTH_TOKEN
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
     - name: Enable TS
@@ -21,20 +21,15 @@ jobs:
     - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
     - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "${{ secrets.PASSWORD }}" -Force)
     - run: Set-WinUserLanguageList -LanguageList tr, en-US -Force
-    
-    
-    - run:  Invoke-WebRequest https://github.com/CI-Devs/Windows-RDP-ACTIONS/raw/main/send_telegram.ps1 -OutFile C:\send_telegram.ps1
-   
-            
-      
+
+    - run: Invoke-WebRequest https://github.com/CI-Devs/Windows-RDP-ACTIONS/raw/main/send_telegram.ps1 -OutFile C:\send_telegram.ps1
+
     - name: NGROK Tunnel and telegram
       run: |
-           Start-Process -FilePath ".\ngrok\ngrok.exe" -ArgumentList "tcp 3389 -region ${{ secrets.NGROK_REGION }}"
+           Start-Process -FilePath ".\ngrok\ngrok.exe" -ArgumentList "tcp 3389 --region ${{ secrets.NGROK_REGION }}"
            Start-Sleep -s 30
            $Response = ConvertFrom-Json(Invoke-WebRequest -Uri "http://127.0.0.1:4040/api/tunnels")
            Start-Sleep -s 1
            $URLString = $Response.tunnels.public_url
            if($URLString) { C:\send_telegram.ps1 ${{ secrets.TG_TOKEN }} ${{ secrets.TG_CHAT_ID }} ($URLString -split "tcp://")[1]}
            Start-Sleep -s 21600
-    
-    
